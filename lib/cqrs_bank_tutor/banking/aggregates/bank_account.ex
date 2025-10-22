@@ -29,21 +29,21 @@ defmodule CqrsBankTutor.Banking.Aggregates.BankAccount do
 
   def execute(%BankAccount{opened?: true}, %OpenAccount{}), do: {:error, :already_opened}
 
-  def execute(%BankAccount{opened?: true} = s, %DepositMoney{amount: amt}) do
+  def execute(%BankAccount{opened?: true} = s, %DepositMoney{amount: amt, transfer_id: tid}) do
     amt = normalize!(amt)
     if non_positive?(amt) do
       {:error, :non_positive_amount}
     else
-      %MoneyDeposited{account_id: s.account_id, amount: amt, new_balance: Decimal.add(s.balance, amt), at: now()}
+      %MoneyDeposited{account_id: s.account_id, amount: amt, new_balance: Decimal.add(s.balance, amt), at: now(), transfer_id: tid}
     end
   end
 
-  def execute(%BankAccount{opened?: true, balance: bal} = s, %WithdrawMoney{amount: amt}) do
+  def execute(%BankAccount{opened?: true, balance: bal} = s, %WithdrawMoney{amount: amt, transfer_id: tid}) do
     amt = normalize!(amt)
     cond do
       non_positive?(amt) -> {:error, :non_positive_amount}
       Decimal.compare(bal, amt) == :lt -> {:error, :insufficient_funds}
-      true -> %MoneyWithdrawn{account_id: s.account_id, amount: amt, new_balance: Decimal.sub(bal, amt), at: now()}
+      true -> %MoneyWithdrawn{account_id: s.account_id, amount: amt, new_balance: Decimal.sub(bal, amt), at: now(), transfer_id: tid}
     end
   end
 

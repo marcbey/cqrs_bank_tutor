@@ -21,7 +21,7 @@ defmodule CqrsBankTutorWeb.TransferLive do
       <div class={["max-w-2xl mx-auto py-8 space-y-6"]}>
         <h1 class={["text-xl font-semibold"]}>Transfer <%= @transfer.id %></h1>
         <div class={["rounded-md border p-4 space-y-1"]}>
-          <div>Amount: €<%= @transfer.amount %></div>
+          <div>Amount: €<%= Decimal.to_string(@transfer.amount) %></div>
           <div>Status: <%= @transfer.status %></div>
           <div>From: <%= @transfer.source_id %></div>
           <div>To: <%= @transfer.target_id %></div>

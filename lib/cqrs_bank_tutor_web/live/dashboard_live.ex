@@ -38,7 +38,7 @@ defmodule CqrsBankTutorWeb.DashboardLive do
     else
       id = Ecto.UUID.generate()
       cmd = %StartTransfer{transfer_id: id, source_id: s, target_id: t, amount: Decimal.new(a)}
-      case CqrsBankTutor.App.dispatch(cmd) do
+      case CqrsBankTutor.App.dispatch(cmd, metadata: %{correlation_id: id}) do
         :ok -> {:noreply, refresh(socket)}
         {:error, reason} -> {:noreply, put_flash(socket, :error, inspect(reason))}
       end
@@ -66,13 +66,13 @@ defmodule CqrsBankTutorWeb.DashboardLive do
               <div :for={{id, a} <- @streams.accounts} id={id} class={["p-4 flex items-center justify-between"]}>
                 <div>
                   <div class={["font-medium"]}>Owner: <%= a.owner %></div>
-                  <div class={["text-sm text-zinc-600"]}>Balance: €<%= a.balance %></div>
+                  <div class={["text-sm text-zinc-600"]}>Balance: €<%= Decimal.to_string(a.balance) %></div>
                 </div>
                 <.link navigate={~p"/accounts/#{a.id}"} class={["text-zinc-700 hover:underline"]}>View</.link>
               </div>
             </div>
             <form phx-submit="open_account" class="space-y-2">
-              <.input name="owner" label="Owner" required />
+              <.input name="owner" label="Owner" value="" required />
               <.input name="initial" label="Initial Balance (EUR)" type="number" step="0.01" value="0.00" />
               <.button class="mt-2">Open account</.button>
             </form>
@@ -83,16 +83,16 @@ defmodule CqrsBankTutorWeb.DashboardLive do
               <div class={["hidden only:block p-4 text-sm text-zinc-600"]}>No transfers yet</div>
               <div :for={{id, t} <- @streams.transfers} id={id} class={["p-4 flex items-center justify-between"]}>
                 <div>
-                  <div class={["font-medium"]}>€<%= t.amount %> • <%= t.status %></div>
+                  <div class={["font-medium"]}>€<%= Decimal.to_string(t.amount) %> • <%= t.status %></div>
                   <div class={["text-sm text-zinc-600"]}>from <%= t.source_id %> to <%= t.target_id %></div>
                 </div>
                 <.link navigate={~p"/transfers/#{t.id}"} class={["text-zinc-700 hover:underline"]}>View</.link>
               </div>
             </div>
             <form phx-submit="start_transfer" class="space-y-2">
-              <.input name="src" label="Source Account ID" required />
-              <.input name="tgt" label="Target Account ID" required />
-              <.input name="amount" label="Amount (EUR)" type="number" step="0.01" required />
+              <.input name="src" label="Source Account ID" value="" required />
+              <.input name="tgt" label="Target Account ID" value="" required />
+              <.input name="amount" label="Amount (EUR)" type="number" step="0.01" value="" required />
               <.button class="mt-2">Start transfer</.button>
             </form>
           </div>

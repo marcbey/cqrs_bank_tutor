@@ -5,5 +5,5 @@ defmodule CqrsBankTutor.Banking.Commands.WithdrawMoney do
   The aggregate guards against overdrafts and emits `MoneyWithdrawn`.
   """
   @enforce_keys [:account_id, :amount]
-  defstruct [:account_id, :amount]
+  defstruct [:account_id, :amount, :transfer_id]
 end

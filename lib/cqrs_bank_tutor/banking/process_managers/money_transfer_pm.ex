@@ -22,15 +22,21 @@ defmodule CqrsBankTutor.Banking.ProcessManagers.MoneyTransferPM do
   alias CqrsBankTutor.Banking.Commands.{WithdrawMoney, DepositMoney, MarkTransferAsCredited}
   alias CqrsBankTutor.Banking.Events.{TransferStarted, MoneyWithdrawn, MoneyDeposited, TransferFailed, TransferCredited}
 
-  def interested?(%TransferStarted{transfer_id: id}), do: {:start, id}
-  def interested?(_), do: false
+  @doc "Correlate events to a transfer instance (prefer event.transfer_id, fallback to metadata.correlation_id)."
+  def interested?(%TransferStarted{transfer_id: id}, _metadata), do: {:start, id}
+  def interested?(%MoneyWithdrawn{transfer_id: id}, _metadata) when not is_nil(id), do: {:continue, id}
+  def interested?(%MoneyDeposited{transfer_id: id}, _metadata) when not is_nil(id), do: {:continue, id}
+  def interested?(%MoneyWithdrawn{}, %{correlation_id: id}) when is_binary(id), do: {:continue, id}
+  def interested?(%MoneyDeposited{}, %{correlation_id: id}) when is_binary(id), do: {:continue, id}
+  def interested?(%TransferCredited{transfer_id: id}, _metadata), do: {:continue, id}
+  def interested?(_, _), do: false
 
-  def handle(%__MODULE__{status: :debiting}, %TransferStarted{source_id: src, amount: amt}) do
-    %WithdrawMoney{account_id: src, amount: amt}
+  def handle(%__MODULE__{status: :debiting}, %TransferStarted{transfer_id: tid, source_id: src, amount: amt}) do
+    %WithdrawMoney{account_id: src, amount: amt, transfer_id: tid}
   end
 
   def handle(%__MODULE__{} = s, %MoneyWithdrawn{}) do
-    %DepositMoney{account_id: s.target_id, amount: s.amount}
+    %DepositMoney{account_id: s.target_id, amount: s.amount, transfer_id: s.transfer_id}
   end
 
   def handle(%__MODULE__{} = s, %MoneyDeposited{}) do

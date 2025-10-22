@@ -5,5 +5,5 @@ defmodule CqrsBankTutor.Banking.Events.MoneyWithdrawn do
   Encodes the resulting balance to keep event handling deterministic.
   """
   @derive Jason.Encoder
-  defstruct [:account_id, :amount, :new_balance, :at]
+  defstruct [:account_id, :amount, :new_balance, :at, :transfer_id]
 end

@@ -43,15 +43,15 @@ defmodule CqrsBankTutorWeb.AccountLive do
         <h1 class={["text-xl font-semibold"]}>Account <%= @account.id %></h1>
         <div class={["rounded-md border p-4 space-y-1"]}>
           <div>Owner: <b><%= @account.owner %></b></div>
-          <div>Balance: €<%= @account.balance %></div>
+          <div>Balance: €<%= Decimal.to_string(@account.balance) %></div>
         </div>
         <div class={["grid sm:grid-cols-2 gap-4"]}>
           <form phx-submit="deposit" class="space-y-2">
-            <.input name="amount" label="Deposit EUR" type="number" step="0.01" />
+            <.input name="amount" label="Deposit EUR" type="number" step="0.01" value="" />
             <.button>Deposit</.button>
           </form>
           <form phx-submit="withdraw" class="space-y-2">
-            <.input name="amount" label="Withdraw EUR" type="number" step="0.01" />
+            <.input name="amount" label="Withdraw EUR" type="number" step="0.01" value="" />
             <.button>Withdraw</.button>
           </form>
         </div>

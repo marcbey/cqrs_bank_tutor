@@ -5,5 +5,5 @@ defmodule CqrsBankTutor.Banking.Events.MoneyDeposited do
   Carries the new balance to simplify projection logic.
   """
   @derive Jason.Encoder
-  defstruct [:account_id, :amount, :new_balance, :at]
+  defstruct [:account_id, :amount, :new_balance, :at, :transfer_id]
 end
