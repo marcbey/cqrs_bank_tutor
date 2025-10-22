@@ -29,6 +29,43 @@ Learn the architecture and flows in `docs/overview.md`.
   - Bob with €50.00
 - Start the server and try a transfer from Alice → Bob.
 
+## Diagrams
+
+High‑level flow
+
+```
+UI (LiveView)
+   │  sends command
+   ▼
+Commanded App (Router → Aggregate)
+   │  emits event(s)
+   ▼
+EventStore (append‑only)
+   │  subscribes
+   ├────────► Process Manager (saga) ──► emits more commands
+   │                                      (e.g., withdraw → deposit → finalize)
+   │  subscribes
+   ▼
+Projectors (Ecto)
+   │  write
+   ▼
+Read DB (Ecto schemas)
+   ▲
+   │  queries
+UI (LiveView)
+```
+
+Transfer happy path
+
+```
+StartTransfer ──► TransferStarted ──► PM issues WithdrawMoney
+                                     └─event→ MoneyWithdrawn ──► PM issues DepositMoney
+                                                              └─event→ MoneyDeposited ──► PM issues MarkTransferAsCredited
+                                                                                           └─event→ TransferCredited
+```
+
+See more in `docs/overview.md` and the `docs/cheat_sheet.md` quick reference.
+
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 
 ## Learn more

@@ -1,4 +1,4 @@
-# CQRSBankTutor — Architecture Overview
+# CQRSBankTutor — Architecture Overview (Beginner Friendly)
 
 This project is a tiny, end‑to‑end example of CQRS, Event Sourcing, and DDD using:
 
@@ -7,7 +7,22 @@ This project is a tiny, end‑to‑end example of CQRS, Event Sourcing, and DDD 
 - Ecto (read model projections)
 - Phoenix LiveView (UI)
 
-It’s intentionally small and focused to help you learn the core patterns with a concrete, working app.
+It’s intentionally small and focused to help you learn the core patterns with a concrete, working app. If you are new to these concepts, start with the Quick Definitions and Big Picture sections below.
+
+---
+
+## Quick Definitions
+
+- CQRS (Command Query Responsibility Segregation)
+  - Split write operations (commands that change state) from read operations (queries that return state). Each side can be modeled and scaled independently.
+
+- Event Sourcing (ES)
+  - Instead of storing rows that are overwritten, store an append‑only log of events (facts) describing what happened. Current state = fold/apply all events.
+
+- Domain‑Driven Design (DDD)
+  - Model software around the business domain. Use ubiquitous language (shared domain terms), identify aggregates (consistency boundaries), and encode invariants.
+
+Tip: Commands are intentions (“Withdraw 10€”); Events are facts (“10€ withdrawn”).
 
 ---
 
@@ -16,6 +31,22 @@ It’s intentionally small and focused to help you learn the core patterns with 
 - Separate write concerns (commands, invariants, domain decisions) from read concerns (queries, UX‑optimized schemas).
 - Persist facts (events) rather than mutating rows; you can rebuild projections any time.
 - Express business logic in an event‑driven, auditable way.
+
+---
+
+## Big Picture
+
+Imagine a ledger:
+
+    UI → Command → Aggregate (decide) → Event → EventStore
+                                       ↓
+                  Process Manager (orchestrate cross‑aggregate workflows)
+                                       ↓
+                                Projectors (build read tables)
+                                       ↓
+                                       UI (queries)
+
+Writes emit immutable events. Readers subscribe and build query‑friendly tables. The UI reads from those tables (eventual consistency) and sends new commands to make changes.
 
 ---
 
@@ -48,7 +79,7 @@ Supervision: `lib/cqrs_bank_tutor/application.ex`
 
 ---
 
-## End‑to‑End Flow
+## End‑to‑End Flow (Happy Path)
 
 1) A user action triggers a command from LiveView
    - Example: “Open account” posts `OpenAccount{account_id, owner, initial_balance}` via `CqrsBankTutor.App.dispatch/2`.
@@ -68,7 +99,7 @@ Supervision: `lib/cqrs_bank_tutor/application.ex`
 
 ---
 
-## Write Model Essentials
+## Write Model Essentials (Aggregates)
 
 - Aggregates are pure decision engines:
   - `execute/2` (command → event | error)
@@ -83,7 +114,7 @@ Files to study:
 
 ---
 
-## Read Model Projections
+## Read Model Projections (Queries)
 
 - `AccountsProjector` upserts rows on account events.
 - `TransfersProjector` tracks workflow status and timestamps.
@@ -92,6 +123,54 @@ Files to study:
 Tables (see migration):
 - `accounts(id uuid, owner text, balance decimal(20,2), opened_at timestamptz)`
 - `transfers(id uuid, source_id uuid, target_id uuid, amount decimal(20,2), status text, started_at timestamptz, finished_at timestamptz, reason text)`
+
+---
+
+## Eventual Consistency (What it is and how to handle it)
+
+- After you dispatch a command, the event is stored immediately, but the read tables update asynchronously.
+- The UI might show slightly stale data until projectors catch up; this is usually milliseconds.
+- Patterns to keep UX smooth:
+  - Optimistic UI (assume success, update UI immediately, reconcile if projector differs)
+  - Show transient “updating…” badges
+  - For critical confirmations, read from the write model by reloading the aggregate or subscribe to projector notifications
+
+---
+
+## Why Not Just CRUD? (Mental model)
+
+- CRUD overwrites state; you lose the “how did we get here?” story. ES keeps the full history.
+- CQRS lets you model reads separately, so you don’t contort schemas to fit both OLTP and reporting needs.
+- Aggregates let you put invariants where they belong (e.g., “no overdrafts” inside BankAccount), not scattered across controllers/DB triggers.
+
+---
+
+## Where Do Things Go? (Checklist)
+
+- Validate business invariants? In the aggregate (execute/2)
+- Persist a fact? Emit an event from the aggregate; Commanded app stores it
+- Coordinate multiple aggregates? Process Manager (saga)
+- Build/read UI data? Projectors and Ecto schemas (read side)
+- Cross‑cutting validation (shape of params)? Before building the command (UI/command builder)
+
+---
+
+## Common Questions (FAQ)
+
+- Q: Do I read state from aggregates in the UI?
+  - A: No. UI reads from projections (read DB). Aggregates are for decisions only.
+
+- Q: How do I update the read DB?
+  - A: You don’t directly. Projectors listen to events and update read tables.
+
+- Q: What if a projector runs twice?
+  - A: Make handlers idempotent. Using Ecto.Multi with WHERE conditions keeps updates safe.
+
+- Q: How do I handle failures (e.g., insufficient funds)?
+  - A: Aggregates return {:error, reason}. You can emit a failure event via the PM or UI to keep a complete audit trail.
+
+- Q: Can I change event structure later?
+  - A: Favor additive changes. For breaking changes, use versioned events or upcasters (out of scope for this tutorial but worth researching).
 
 ---
 
@@ -152,6 +231,15 @@ Tables (see migration):
 
 ---
 
+## Testing Tips
+
+- Unit test aggregates: assert command → event(s) decisions and event → state transitions.
+- Integration test process manager flows: publish events and assert emitted commands or resulting events.
+- Projector tests: seed events, run projector, assert read rows.
+- LiveView tests: simulate user actions, assert reads update after a short wait.
+
+---
+
 ## Troubleshooting
 
 - EventStore init
@@ -182,4 +270,3 @@ Tables (see migration):
 - EventStore: https://github.com/commanded/eventstore
 - Phoenix LiveView: https://hexdocs.pm/phoenix_live_view
 - Decimal: https://hexdocs.pm/decimal
-
