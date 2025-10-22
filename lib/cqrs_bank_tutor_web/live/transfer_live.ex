@@ -18,9 +18,9 @@ defmodule CqrsBankTutorWeb.TransferLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="max-w-2xl mx-auto py-8 space-y-6">
-        <h1 class="text-xl font-semibold">Transfer <%= @transfer.id %></h1>
-        <div class="rounded-md border p-4 space-y-1">
+      <div class={["max-w-2xl mx-auto py-8 space-y-6"]}>
+        <h1 class={["text-xl font-semibold"]}>Transfer <%= @transfer.id %></h1>
+        <div class={["rounded-md border p-4 space-y-1"]}>
           <div>Amount: €<%= @transfer.amount %></div>
           <div>Status: <%= @transfer.status %></div>
           <div>From: <%= @transfer.source_id %></div>

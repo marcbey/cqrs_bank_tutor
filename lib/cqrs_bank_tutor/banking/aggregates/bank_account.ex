@@ -18,20 +18,17 @@ defmodule CqrsBankTutor.Banking.Aggregates.BankAccount do
   alias CqrsBankTutor.Banking.Commands.{OpenAccount, DepositMoney, WithdrawMoney}
   alias CqrsBankTutor.Banking.Events.{AccountOpened, MoneyDeposited, MoneyWithdrawn}
 
-  @doc "Handle OpenAccount by validating input and emitting AccountOpened."
   def execute(%BankAccount{opened?: false}, %OpenAccount{account_id: id, owner: owner, initial_balance: amt}) do
     amt = normalize!(amt)
-    if Decimal.cmp(amt, 0) == :lt do
+    if Decimal.compare(amt, Decimal.new(0)) == :lt do
       {:error, :negative_initial_balance}
     else
       %AccountOpened{account_id: id, owner: owner, initial_balance: amt, opened_at: now()}
     end
   end
 
-  @doc "Reject opening an already opened account."
   def execute(%BankAccount{opened?: true}, %OpenAccount{}), do: {:error, :already_opened}
 
-  @doc "Handle DepositMoney ensuring strictly positive amounts."
   def execute(%BankAccount{opened?: true} = s, %DepositMoney{amount: amt}) do
     amt = normalize!(amt)
     if non_positive?(amt) do
@@ -41,12 +38,11 @@ defmodule CqrsBankTutor.Banking.Aggregates.BankAccount do
     end
   end
 
-  @doc "Handle WithdrawMoney with overdraft protection."
   def execute(%BankAccount{opened?: true, balance: bal} = s, %WithdrawMoney{amount: amt}) do
     amt = normalize!(amt)
     cond do
       non_positive?(amt) -> {:error, :non_positive_amount}
-      Decimal.cmp(bal, amt) == :lt -> {:error, :insufficient_funds}
+      Decimal.compare(bal, amt) == :lt -> {:error, :insufficient_funds}
       true -> %MoneyWithdrawn{account_id: s.account_id, amount: amt, new_balance: Decimal.sub(bal, amt), at: now()}
     end
   end
@@ -60,8 +56,8 @@ defmodule CqrsBankTutor.Banking.Aggregates.BankAccount do
   def apply(%BankAccount{} = s, %MoneyWithdrawn{new_balance: nb}), do: %BankAccount{s | balance: nb}
 
   # Helpers
-  defp normalize!(%Decimal{} = d), do: Decimal.quantize(d, Decimal.new("0.01"))
+  defp normalize!(%Decimal{} = d), do: Decimal.round(d, 2)
   defp normalize!(n) when is_integer(n) or is_float(n) or is_binary(n), do: n |> Decimal.new() |> normalize!()
-  defp non_positive?(d), do: Decimal.cmp(d, 0) in [:eq, :lt]
+  defp non_positive?(d), do: Decimal.compare(d, Decimal.new(0)) in [:eq, :lt]
   defp now, do: DateTime.utc_now()
 end

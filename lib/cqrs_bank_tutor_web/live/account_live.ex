@@ -37,13 +37,15 @@ defmodule CqrsBankTutorWeb.AccountLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="max-w-2xl mx-auto py-8 space-y-6">
-        <h1 class="text-xl font-semibold">Account <%= @account.id %></h1>
-        <div class="rounded-md border p-4 space-y-1">
+      <div class={[
+        "max-w-2xl mx-auto py-8 space-y-6"
+      ]}>
+        <h1 class={["text-xl font-semibold"]}>Account <%= @account.id %></h1>
+        <div class={["rounded-md border p-4 space-y-1"]}>
           <div>Owner: <b><%= @account.owner %></b></div>
           <div>Balance: €<%= @account.balance %></div>
         </div>
-        <div class="grid sm:grid-cols-2 gap-4">
+        <div class={["grid sm:grid-cols-2 gap-4"]}>
           <form phx-submit="deposit" class="space-y-2">
             <.input name="amount" label="Deposit EUR" type="number" step="0.01" />
             <.button>Deposit</.button>

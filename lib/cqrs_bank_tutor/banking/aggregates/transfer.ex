@@ -11,12 +11,10 @@ defmodule CqrsBankTutor.Banking.Aggregates.Transfer do
   alias CqrsBankTutor.Banking.Commands.{StartTransfer, MarkTransferAsCredited}
   alias CqrsBankTutor.Banking.Events.{TransferStarted, TransferCredited}
 
-  @doc "Emit TransferStarted when a new transfer is initiated."
   def execute(%Transfer{status: :init}, %StartTransfer{transfer_id: id, source_id: s, target_id: t, amount: a}) do
     %TransferStarted{transfer_id: id, source_id: s, target_id: t, amount: a, started_at: DateTime.utc_now()}
   end
 
-  @doc "Emit TransferCredited only after the PM has credited the target."
   def execute(%Transfer{status: :finishing} = s, %MarkTransferAsCredited{}) do
     %TransferCredited{transfer_id: s.transfer_id, target_id: s.target_id, amount: s.amount, at: DateTime.utc_now()}
   end
